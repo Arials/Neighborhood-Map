@@ -39,21 +39,22 @@ var initialLocations = [
 ];
 
 function initMap() {
-        // Constructor creates a new map - only center and zoom are required.
-    console.log('hi');
+    // Constructor creates a new map - only center and zoom are required.
     this.map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 43.350570, lng: -8.346710},
         zoom: 13
     });
-
-    var santaCruz = {lat: 43.350570, lng: -8.346710};
+    var bounds = new google.maps.LatLngBounds();
     initialLocations.forEach(function(markItem){
     	var marker = new google.maps.Marker({
     		position: markItem.position,
     		map: map,
     		title: markItem.name
     	})
+    	bounds.extend(marker.getPosition());
     });
+    map.fitBounds(bounds);
+
 }
 
 
