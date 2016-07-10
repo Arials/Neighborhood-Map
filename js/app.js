@@ -102,7 +102,18 @@ var ViewModel = function(){
 	});
 
 	init = function(){
+		refreshMapMarks();
+	};
 
+	nameClick = function(clicked){
+		console.log(self.actualMarkers);
+		self.actualMarkers.forEach(function(markItem){
+			if (markItem.title == clicked.name())
+			{
+				// Rise marker event
+				google.maps.event.trigger(markItem, 'click');
+			}
+		});
 	};
 
 	refreshMapMarks = function(){
@@ -115,8 +126,6 @@ var ViewModel = function(){
 
 		// Add the filtered markers to the map
 		ko.utils.arrayForEach(self.filteredArray(), function(item) {
-
-
 			var marker = new google.maps.Marker({
 	    		position: item.position(),
 	    		map: map,
@@ -124,8 +133,11 @@ var ViewModel = function(){
 	    		});
 
     		bounds.extend(marker.getPosition());
+
     		marker.addListener('click', function() {
-    			var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search=' + item.name() + '&format=json&callback=wikiCallback';
+    			var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search='
+    				+ item.name() +
+    				'&format=json&callback=wikiCallback';
 			    $.ajax( {
 			        url: wikiUrl,
 			        dataType: 'jsonp',
@@ -151,15 +163,12 @@ var ViewModel = function(){
 
 		  	});
 
-    		this.actualMarkers.push(marker);
+    		self.actualMarkers.push(marker);
     	});
     	// Fit the map to marks
     	map.fitBounds(bounds);
 	};
 }
 
-var getWikiInfo = function(filter){
-
-}
 
 ko.applyBindings(new ViewModel());
