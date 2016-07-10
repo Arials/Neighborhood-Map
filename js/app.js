@@ -2,6 +2,7 @@ var map;
 var markersList;
 var actualMarkers = [];
 var filter;
+var filteredArray = ko.observableArray([]);
 
 var initialLocations = [
 	{
@@ -71,7 +72,63 @@ function initMap() {
     });
     // Fit the map to marks
     map.fitBounds(bounds);
+    refreshMapMarks();
 }
+
+function refreshMapMarks(){
+	var self = this;
+	// Delete Actual Markers from map
+	this.actualMarkers.forEach(function(markItem){
+		markItem.setMap(null);
+	});
+	self.actualMarkers = [];
+	var bounds = new google.maps.LatLngBounds();
+
+	// Add the filtered markers to the map
+	ko.utils.arrayForEach(filteredArray(), function(item) {
+		var marker = new google.maps.Marker({
+    		position: item.position(),
+    		map: map,
+    		title: item.name()
+    		});
+
+		bounds.extend(marker.getPosition());
+		// Add Click event to map marker
+		marker.addListener('click', function() {
+			// Construct the url for get wiki info searching by title
+			var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search='
+				+ item.name() +
+				'&format=json&callback=wikiCallback';
+		    $.ajax( {
+		        url: wikiUrl,
+		        dataType: 'jsonp',
+		        success: function(response) {
+		           // do something with data
+		            var wikiTitles = response[1];
+		            var wikiLinks = response[3];
+		            var wikiInfo = response[2];
+		            var infoToShow = '';
+		            for (var i = 0; i < wikiTitles.length; i++){
+		                var wikiTitle = wikiTitles[i];
+		                infoToShow += '<li class="article">' +
+		                    '<a href="' + wikiLinks[i] + '">'+ wikiTitle +'</a>' +
+		                    '<p>' + wikiInfo[i] + '</p>'
+		                    + '</li>';
+		            };
+		            var infowindow = new google.maps.InfoWindow({
+						content: infoToShow
+						});
+		            infowindow.open(map, marker);
+		        }
+		    } );
+
+	  	});
+		// Add the actual marker to a list
+		self.actualMarkers.push(marker);
+	});
+	// Fit the map to marks
+	map.fitBounds(bounds);
+};
 
 var ViewModel = function(){
 	var self = this;
@@ -89,7 +146,7 @@ var ViewModel = function(){
 		return true;
 	};
 
-	this.filteredArray = ko.computed(function(){
+	filteredArray = ko.computed(function(){
 		if(!self.filter()) {
             return self.markersList();
         } else {
@@ -104,7 +161,7 @@ var ViewModel = function(){
 	};
 
 	nameClick = function(clicked){
-		self.actualMarkers.forEach(function(markItem){
+		actualMarkers.forEach(function(markItem){
 			if (markItem.title == clicked.name())
 			{
 				// Rise marker event
@@ -113,59 +170,7 @@ var ViewModel = function(){
 		});
 	};
 
-	refreshMapMarks = function(){
-		// Delete Actual Markers from map
-		this.actualMarkers.forEach(function(markItem){
-			markItem.setMap(null);
-		});
-		self.actualMarkers = [];
-		var bounds = new google.maps.LatLngBounds();
 
-		// Add the filtered markers to the map
-		ko.utils.arrayForEach(self.filteredArray(), function(item) {
-			var marker = new google.maps.Marker({
-	    		position: item.position(),
-	    		map: map,
-	    		title: item.name()
-	    		});
-
-    		bounds.extend(marker.getPosition());
-    		// Add Click event to map marker
-    		marker.addListener('click', function() {
-    			// Construct the url for get wiki info searching by title
-    			var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search='
-    				+ item.name() +
-    				'&format=json&callback=wikiCallback';
-			    $.ajax( {
-			        url: wikiUrl,
-			        dataType: 'jsonp',
-			        success: function(response) {
-			           // do something with data
-			            var wikiTitles = response[1];
-			            var wikiLinks = response[3];
-			            var wikiInfo = response[2];
-			            var infoToShow = '';
-			            for (var i = 0; i < wikiTitles.length; i++){
-			                var wikiTitle = wikiTitles[i];
-			                infoToShow += '<li class="article">' +
-			                    '<a href="' + wikiLinks[i] + '">'+ wikiTitle +'</a>' +
-			                    '<p>' + wikiInfo[i] + '</p>'
-			                    + '</li>';
-			            };
-			            var infowindow = new google.maps.InfoWindow({
-    						content: infoToShow
-  						});
-			            infowindow.open(map, marker);
-			        }
-			    } );
-
-		  	});
-    		// Add the actual marker to a list
-    		self.actualMarkers.push(marker);
-    	});
-    	// Fit the map to marks
-    	map.fitBounds(bounds);
-	};
 }
 
 ko.applyBindings(new ViewModel());
