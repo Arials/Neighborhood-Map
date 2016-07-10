@@ -89,6 +89,7 @@ var ViewModel = function(){
 	this.setFilter = function(){
 		// no needed for now
 		refreshMapMarks();
+		return true;
 	};
 
 	this.filteredArray = ko.computed(function(){
@@ -106,7 +107,6 @@ var ViewModel = function(){
 	};
 
 	nameClick = function(clicked){
-		console.log(self.actualMarkers);
 		self.actualMarkers.forEach(function(markItem){
 			if (markItem.title == clicked.name())
 			{
