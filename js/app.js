@@ -1,4 +1,7 @@
 var map;
+var markersList;
+var actualMarkers;
+var filter;
 
 var initialLocations = [
 	{
@@ -45,18 +48,21 @@ function Location(data){
 
 
 function initMap() {
+	var self = this;
     // Constructor creates a new Google map
     this.map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 43.350570, lng: -8.346710},
         zoom: 13
     });
     var bounds = new google.maps.LatLngBounds();
-    initialLocations.forEach(function(markItem){
+    this.actualMarkers = ko.observableArray([]);
+    this.initialLocations.forEach(function(markItem){
     	var marker = new google.maps.Marker({
     		position: markItem.position,
     		map: map,
     		title: markItem.name
     	})
+    	self.initialLocations.push(marker);
     	bounds.extend(marker.getPosition());
     });
     map.fitBounds(bounds);
@@ -67,12 +73,27 @@ function initMap() {
 var ViewModel = function(){
 	var self = this;
 
+	this.filter = ko.observable('');
 	this.markersList = ko.observableArray([]);
 
 	initialLocations.forEach(function(locationItem)
 	{
 		self.markersList.push( new Location(locationItem) );
 
+	});
+
+	this.setFilter = function(){
+		// no needed for now
+	};
+
+	this.filteredArray = ko.computed(function(){
+		if(!self.filter()) {
+            return self.markersList();
+        } else {
+            return ko.utils.arrayFilter(self.markersList(), function(mark) {
+                return mark.name().indexOf(self.filter()) > -1;
+            });
+        }
 	});
 }
 

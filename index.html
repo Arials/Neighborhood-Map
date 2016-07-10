@@ -8,8 +8,8 @@
 <body>
     <div id="placesList">
         <h3>Adriel's places</h3>
-        <input type="text" name="fname"><br> <button type="button">Filter</button>
-        <ul data-bind="foreach: markersList">
+        <input type="text" name="fname" data-bind="value: filter"> <button type="button" data-bind="click: setFilter">Filter</button><br>
+        <ul data-bind="foreach: filteredArray">
             <li data-bind="text: name"></li>
         </ul>
     </div>
