@@ -9,43 +9,48 @@ var initialLocations = [
 		position: {
 			lat: 43.350570,
 			lng: -8.346710
-		}
+		},
+		info: 'Santa Cruz Info'
 	},
 	{
 		name: 'Santa Cristina',
 		position:{
 			lat: 43.340583,
 			lng: -8.381279
-		}
+		},
+		info: 'Santa Cristina Info'
 	},
 	{
 		name: 'Torre de Hércules',
 		position: {
 			lat: 43.38620,
 			lng: -8.406444
-		}
+		},
+		info: 'Torre de Hércules Info'
 	},
 	{
 		name: 'María Pita',
 		position:{
 			lat: 43.371566,
 			lng: -8.395897
-		}
+		},
+		info: 'María Pita Info'
 	},
 	{
 		name: 'Catedral de Santiago de Compostela',
 		position: {
 			lat: 42.880590,
 			lng: -8.544680
-		}
+		},
+		info: 'Catedral Info'
 	}
 ];
 
 function Location(data){
 	this.name = ko.observable(data.name);
 	this.position = ko.observable(data.position);
+	this.info = ko.observable(data.info);
 }
-
 
 function initMap() {
 	var self = this;
@@ -68,7 +73,6 @@ function initMap() {
     map.fitBounds(bounds);
 
 }
-
 
 var ViewModel = function(){
 	var self = this;
@@ -97,6 +101,10 @@ var ViewModel = function(){
         }
 	});
 
+	init = function(){
+
+	};
+
 	refreshMapMarks = function(){
 		// Delete Actual Markers from map
 		this.actualMarkers.forEach(function(markItem){
@@ -104,19 +112,54 @@ var ViewModel = function(){
 		});
 		self.actualMarkers = [];
 		var bounds = new google.maps.LatLngBounds();
+
 		// Add the filtered markers to the map
 		ko.utils.arrayForEach(self.filteredArray(), function(item) {
+
+
 			var marker = new google.maps.Marker({
 	    		position: item.position(),
 	    		map: map,
 	    		title: item.name()
 	    		});
+
     		bounds.extend(marker.getPosition());
+    		marker.addListener('click', function() {
+    			var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search=' + item.name() + '&format=json&callback=wikiCallback';
+			    $.ajax( {
+			        url: wikiUrl,
+			        dataType: 'jsonp',
+			        success: function(response) {
+			           // do something with data
+			            var wikiTitles = response[1];
+			            var wikiLinks = response[3];
+			            var wikiInfo = response[2];
+			            var infoToShow = '';
+			            for (var i = 0; i < wikiTitles.length; i++){
+			                var wikiTitle = wikiTitles[i];
+			                infoToShow += '<li class="article">' +
+			                    '<a href="' + wikiLinks[i] + '">'+ wikiTitle +'</a>' +
+			                    '<p>' + wikiInfo[i] + '</p>'
+			                    + '</li>';
+			            };
+			            var infowindow = new google.maps.InfoWindow({
+    						content: infoToShow
+  						});
+			            infowindow.open(map, marker);
+			        }
+			    } );
+
+		  	});
+
     		this.actualMarkers.push(marker);
     	});
     	// Fit the map to marks
     	map.fitBounds(bounds);
 	};
+}
+
+var getWikiInfo = function(filter){
+
 }
 
 ko.applyBindings(new ViewModel());
