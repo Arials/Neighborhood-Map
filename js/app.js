@@ -71,7 +71,6 @@ function initMap() {
     });
     // Fit the map to marks
     map.fitBounds(bounds);
-
 }
 
 var ViewModel = function(){
@@ -83,11 +82,9 @@ var ViewModel = function(){
 	initialLocations.forEach(function(locationItem)
 	{
 		self.markersList.push( new Location(locationItem) );
-
 	});
 
 	this.setFilter = function(){
-		// no needed for now
 		refreshMapMarks();
 		return true;
 	};
@@ -133,8 +130,9 @@ var ViewModel = function(){
 	    		});
 
     		bounds.extend(marker.getPosition());
-
+    		// Add Click event to map marker
     		marker.addListener('click', function() {
+    			// Construct the url for get wiki info searching by title
     			var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search='
     				+ item.name() +
     				'&format=json&callback=wikiCallback';
@@ -162,13 +160,12 @@ var ViewModel = function(){
 			    } );
 
 		  	});
-
+    		// Add the actual marker to a list
     		self.actualMarkers.push(marker);
     	});
     	// Fit the map to marks
     	map.fitBounds(bounds);
 	};
 }
-
 
 ko.applyBindings(new ViewModel());
