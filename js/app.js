@@ -38,8 +38,14 @@ var initialLocations = [
 	}
 ];
 
+function Location(data){
+	this.name = ko.observable(data.name);
+	this.position = ko.observable(data.position);
+}
+
+
 function initMap() {
-    // Constructor creates a new map - only center and zoom are required.
+    // Constructor creates a new Google map
     this.map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 43.350570, lng: -8.346710},
         zoom: 13
@@ -60,6 +66,14 @@ function initMap() {
 
 var ViewModel = function(){
 	var self = this;
+
+	this.markersList = ko.observableArray([]);
+
+	initialLocations.forEach(function(locationItem)
+	{
+		self.markersList.push( new Location(locationItem) );
+
+	});
 }
 
 ko.applyBindings(new ViewModel());
