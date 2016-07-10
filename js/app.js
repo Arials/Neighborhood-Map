@@ -3,6 +3,7 @@ var markersList;
 var actualMarkers = [];
 var filter;
 var filteredArray = ko.observableArray([]);
+var mapsLoaded = false;
 
 var initialLocations = [
 	{
@@ -55,6 +56,7 @@ function Location(data){
 
 function initMap() {
 	var self = this;
+	mapsLoaded = true;
     // Constructor creates a new Google map
     this.map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 43.350570, lng: -8.346710},
@@ -73,6 +75,20 @@ function initMap() {
     // Fit the map to marks
     map.fitBounds(bounds);
     refreshMapMarks();
+}
+
+
+function loadScript() {
+  var script = document.createElement("script");
+  script.type = "text/javascript";
+  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyCT6UAxFHxGOBbwjvbWZxNvxeB9qs_WlwM&v=3&callback=initMap";
+  setTimeout(function() {
+	  if(!mapsLoaded) {
+	    //Map doesn't loaded
+	    $('#map').text('Error loading google maps');
+	  }
+	}, 5000);
+  document.body.appendChild(script);
 }
 
 function refreshMapMarks(){
@@ -95,10 +111,21 @@ function refreshMapMarks(){
 		bounds.extend(marker.getPosition());
 		// Add Click event to map marker
 		marker.addListener('click', function() {
+			var self = this;
 			// Construct the url for get wiki info searching by title
 			var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search='
 				+ item.name() +
 				'&format=json&callback=wikiCallback';
+			self.infoWindowLoaded = false;
+			setTimeout(function() {
+				if(!self.infowindowLoaded) {
+					//Map doesn't loaded
+					var infowindow = new google.maps.InfoWindow({
+						content: 'Error loading Wikipedia Info'
+						});
+		            infowindow.open(map, marker);
+				}
+			}, 5000);
 		    $.ajax( {
 		        url: wikiUrl,
 		        dataType: 'jsonp',
@@ -119,6 +146,7 @@ function refreshMapMarks(){
 						content: infoToShow
 						});
 		            infowindow.open(map, marker);
+		            self.infowindowLoaded = true;
 		        }
 		    } );
 
@@ -169,8 +197,7 @@ var ViewModel = function(){
 			}
 		});
 	};
-
-
 }
 
 ko.applyBindings(new ViewModel());
+loadScript();
