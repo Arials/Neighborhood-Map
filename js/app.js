@@ -1,8 +1,9 @@
 var map;
 var markersList;
-var actualMarkers = [];
+var actualMarkers = ko.observableArray([]);
 var filter;
 var filteredArray = ko.observableArray([]);
+var netFilteredArray = ko.observableArray([]);
 var mapsLoaded = false;
 
 var initialLocations = [
@@ -48,17 +49,20 @@ var initialLocations = [
 	}
 ];
 
-function Location(data){
-	this.name = ko.observable(data.name);
-	this.position = ko.observable(data.position);
-	this.info = ko.observable(data.info);
+function Location(data, activate, marker){
+	this.name = data.name;
+	this.position = data.position;
+	this.info = data.info;
+	this.active = activate;
+	this.animate = false;
+	this.marker = marker;
 }
 
 function initMap() {
 	var self = this;
 	mapsLoaded = true;
     // Constructor creates a new Google map
-    this.map = new google.maps.Map(document.getElementById('map'), {
+    map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 43.350570, lng: -8.346710},
         zoom: 13
     });
@@ -66,11 +70,67 @@ function initMap() {
     this.initialLocations.forEach(function(markItem){
     	var marker = new google.maps.Marker({
     		position: markItem.position,
+			animation: google.maps.Animation.DROP,
     		map: map,
     		title: markItem.name
     	})
     	bounds.extend(marker.getPosition());
-    	self.actualMarkers.push(marker);
+    	actualMarkers.push(new Location(markItem, true, marker));
+
+    	// Add Click event to map marker
+    	marker.addListener('click', function() {
+				var self = this;
+				ko.utils.arrayForEach(filteredArray(), function(item) {
+					if (item.animate){
+						item.animate = false;
+						item.marker.setAnimation(null);
+					}else{
+						if (item.name == marker.title)
+						{
+							item.animate = true;
+							marker.setAnimation(google.maps.Animation.BOUNCE);
+						}
+					}
+				});
+				
+				// Construct the url for get wiki info searching by title
+				var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search='
+					+ markItem.name +
+					'&format=json&callback=wikiCallback';
+				self.infoWindowLoaded = false;
+				setTimeout(function() {
+					if(!self.infowindowLoaded) {
+						//Map doesn't loaded
+						var infowindow = new google.maps.InfoWindow({
+							content: 'Error loading Wikipedia Info'
+							});
+			            infowindow.open(map, marker);
+					}
+				}, 5000);
+			    $.ajax( {
+			        url: wikiUrl,
+			        dataType: 'jsonp',
+			        success: function(response) {
+			            var wikiTitles = response[1];
+			            var wikiLinks = response[3];
+			            var wikiInfo = response[2];
+			            var infoToShow = '';
+			            for (var i = 0; i < wikiTitles.length; i++){
+			                var wikiTitle = wikiTitles[i];
+			                infoToShow += '<li class="article">' +
+			                    '<a href="' + wikiLinks[i] + '">'+ wikiTitle +'</a>' +
+			                    '<p>' + wikiInfo[i] + '</p>'
+			                    + '</li>';
+			            };
+			            var infowindow = new google.maps.InfoWindow({
+							content: infoToShow
+							});
+			            infowindow.open(map, marker);
+			            self.infowindowLoaded = true;
+			        }
+			    } );
+
+		  	});
     });
     // Fit the map to marks
     map.fitBounds(bounds);
@@ -82,9 +142,10 @@ function loadScript() {
   var script = document.createElement("script");
   script.type = "text/javascript";
   script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyCT6UAxFHxGOBbwjvbWZxNvxeB9qs_WlwM&v=3&callback=initMap";
+  script.async = true;
   setTimeout(function() {
 	  if(!mapsLoaded) {
-	    //Map doesn't loaded
+	    //Map didn't load
 	    $('#map').text('Error loading google maps');
 	  }
 	}, 5000);
@@ -93,107 +154,70 @@ function loadScript() {
 
 function refreshMapMarks(){
 	var self = this;
-	// Delete Actual Markers from map
-	this.actualMarkers.forEach(function(markItem){
-		markItem.setMap(null);
+	
+	// Hide markers not filtered
+	ko.utils.arrayFilter(this.notFiletredArray(),function(markItem){
+		if (markItem.active){
+			console.log('Desactiva: ' + markItem.name);
+			markItem.marker.setMap(null);
+			markItem.active = false;
+		}
 	});
-	self.actualMarkers = [];
+	
 	var bounds = new google.maps.LatLngBounds();
-
-	// Add the filtered markers to the map
+	// Show the filtered markers to the map
 	ko.utils.arrayForEach(filteredArray(), function(item) {
-		var marker = new google.maps.Marker({
-    		position: item.position(),
-    		map: map,
-    		title: item.name()
-    		});
-
-		bounds.extend(marker.getPosition());
-		// Add Click event to map marker
-		marker.addListener('click', function() {
-			var self = this;
-			// Construct the url for get wiki info searching by title
-			var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search='
-				+ item.name() +
-				'&format=json&callback=wikiCallback';
-			self.infoWindowLoaded = false;
-			setTimeout(function() {
-				if(!self.infowindowLoaded) {
-					//Map doesn't loaded
-					var infowindow = new google.maps.InfoWindow({
-						content: 'Error loading Wikipedia Info'
-						});
-		            infowindow.open(map, marker);
-				}
-			}, 5000);
-		    $.ajax( {
-		        url: wikiUrl,
-		        dataType: 'jsonp',
-		        success: function(response) {
-		           // do something with data
-		            var wikiTitles = response[1];
-		            var wikiLinks = response[3];
-		            var wikiInfo = response[2];
-		            var infoToShow = '';
-		            for (var i = 0; i < wikiTitles.length; i++){
-		                var wikiTitle = wikiTitles[i];
-		                infoToShow += '<li class="article">' +
-		                    '<a href="' + wikiLinks[i] + '">'+ wikiTitle +'</a>' +
-		                    '<p>' + wikiInfo[i] + '</p>'
-		                    + '</li>';
-		            };
-		            var infowindow = new google.maps.InfoWindow({
-						content: infoToShow
-						});
-		            infowindow.open(map, marker);
-		            self.infowindowLoaded = true;
-		        }
-		    } );
-
-	  	});
-		// Add the actual marker to a list
-		self.actualMarkers.push(marker);
+		if (!item.active){
+			console.log('Activa: ' + item.name);
+			item.active = true;
+			item.marker.setMap(map);
+			bounds.extend(item.marker.getPosition());
+		}
 	});
 	// Fit the map to marks
-	map.fitBounds(bounds);
+	//map.fitBounds(bounds);
+
 };
 
 var ViewModel = function(){
 	var self = this;
 
 	this.filter = ko.observable('');
-	this.markersList = ko.observableArray([]);
-
-	initialLocations.forEach(function(locationItem)
-	{
-		self.markersList.push( new Location(locationItem) );
-	});
 
 	this.setFilter = function(){
 		refreshMapMarks();
 		return true;
 	};
 
+	// Markers to be active
 	filteredArray = ko.computed(function(){
 		if(!self.filter()) {
-            return self.markersList();
+            return actualMarkers();
         } else {
-            return ko.utils.arrayFilter(self.markersList(), function(mark) {
-                return mark.name().indexOf(self.filter()) > -1;
+            return ko.utils.arrayFilter(actualMarkers(), function(mark) {
+                return mark.name.indexOf(self.filter()) > -1;
             });
         }
 	});
+
+	// Markers to be hidden
+	notFiletredArray = ko.computed(function(){
+        return ko.utils.arrayFilter(actualMarkers(), function(mark) {
+            return mark.name.indexOf(self.filter()) <= -1;
+        });
+	});
+
 
 	init = function(){
 		refreshMapMarks();
 	};
 
 	nameClick = function(clicked){
-		actualMarkers.forEach(function(markItem){
-			if (markItem.title == clicked.name())
+		ko.utils.arrayFilter(actualMarkers(),function(markItem){
+			if (markItem.name == clicked.name)
 			{
 				// Rise marker event
-				google.maps.event.trigger(markItem, 'click');
+				google.maps.event.trigger(markItem.marker, 'click');
 			}
 		});
 	};

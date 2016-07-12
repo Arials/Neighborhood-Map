@@ -6,14 +6,23 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="placesList">
-        <h3>Adriel's places</h3>
-        <span>Filter:</span><input type="text" name="fname" data-bind="value: filter, valueUpdate: 'afterkeydown', event: {keyup: setFilter}">
-        <ul data-bind="foreach: filteredArray">
-            <li data-bind="text: name, click: nameClick"></li>
-        </ul>
+    <div class="row">
+        <h1>Adriel's places</h1>
     </div>
-    <div id="map"></div>
+    <div class="container">
+        <div class="markersList">
+            <div id="placesList">
+                <span>Filter: </span><input type="text" name="fname" data-bind="value: filter, valueUpdate: 'afterkeydown', event: {keyup: setFilter}">
+                <ul data-bind="foreach: filteredArray">
+                    <li data-bind="text: name, click: nameClick"></li>
+                </ul>
+            </div>
+        </div>
+        <div class="mapContainer">
+            <div id="map"></div>
+        </div>
+    </div>
+
     <script src="js/lib/knockout-3.2.0.js"></script>
     <script src="js/app.js"></script>
     <script src="js/lib/jquery.min.js"></script>
