@@ -158,7 +158,6 @@ function refreshMapMarks(){
 	// Hide markers not filtered
 	ko.utils.arrayFilter(this.notFiletredArray(),function(markItem){
 		if (markItem.active){
-			console.log('Desactiva: ' + markItem.name);
 			markItem.marker.setMap(null);
 			markItem.active = false;
 		}
@@ -168,15 +167,11 @@ function refreshMapMarks(){
 	// Show the filtered markers to the map
 	ko.utils.arrayForEach(filteredArray(), function(item) {
 		if (!item.active){
-			console.log('Activa: ' + item.name);
 			item.active = true;
 			item.marker.setMap(map);
 			bounds.extend(item.marker.getPosition());
 		}
 	});
-	// Fit the map to marks
-	//map.fitBounds(bounds);
-
 };
 
 var ViewModel = function(){
