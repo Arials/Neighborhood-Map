@@ -1,9 +1,8 @@
 var map;
-var markersList;
 var actualMarkers = ko.observableArray([]);
 var filter;
 var filteredArray = ko.observableArray([]);
-var netFilteredArray = ko.observableArray([]);
+var notFilteredArray = ko.observableArray([]);
 var mapsLoaded = false;
 
 var initialLocations = [
@@ -92,7 +91,7 @@ function initMap() {
 						}
 					}
 				});
-				
+
 				// Construct the url for get wiki info searching by title
 				var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search='
 					+ markItem.name +
@@ -102,7 +101,7 @@ function initMap() {
 					if(!self.infowindowLoaded) {
 						//Map doesn't loaded
 						var infowindow = new google.maps.InfoWindow({
-							content: 'Error loading Wikipedia Info'
+							content: 'Error loading Wikipedia info'
 							});
 			            infowindow.open(map, marker);
 					}
@@ -122,8 +121,16 @@ function initMap() {
 			                    '<p>' + wikiInfo[i] + '</p>'
 			                    + '</li>';
 			            };
+			            infoToShow += '<p class="article"> Information from Wikipedia</p>'
 			            var infowindow = new google.maps.InfoWindow({
 							content: infoToShow
+							});
+			            infowindow.open(map, marker);
+			            self.infowindowLoaded = true;
+			        },
+			        error: function(xhr, textStatus, errorThrown){
+			        	var infowindow = new google.maps.InfoWindow({
+							content: "Error loading Wikipedia data"
 							});
 			            infowindow.open(map, marker);
 			            self.infowindowLoaded = true;
@@ -137,24 +144,13 @@ function initMap() {
     refreshMapMarks();
 }
 
-
-function loadScript() {
-  var script = document.createElement("script");
-  script.type = "text/javascript";
-  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyCT6UAxFHxGOBbwjvbWZxNvxeB9qs_WlwM&v=3&callback=initMap";
-  script.async = true;
-  setTimeout(function() {
-	  if(!mapsLoaded) {
-	    //Map didn't load
-	    $('#map').text('Error loading google maps');
-	  }
-	}, 5000);
-  document.body.appendChild(script);
+function errorLoadingGoogleMaps(){
+	$('#map').text('Error loading google maps error');
 }
 
 function refreshMapMarks(){
 	var self = this;
-	
+
 	// Hide markers not filtered
 	ko.utils.arrayFilter(this.notFiletredArray(),function(markItem){
 		if (markItem.active){
@@ -162,7 +158,7 @@ function refreshMapMarks(){
 			markItem.active = false;
 		}
 	});
-	
+
 	var bounds = new google.maps.LatLngBounds();
 	// Show the filtered markers to the map
 	ko.utils.arrayForEach(filteredArray(), function(item) {
@@ -219,4 +215,4 @@ var ViewModel = function(){
 }
 
 ko.applyBindings(new ViewModel());
-loadScript();
+//loadScript();
